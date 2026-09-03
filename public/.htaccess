@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# Serve real files/directories (assets) as-is.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Everything else goes through the front controller.
+RewriteRule ^ index.php [L]
+
+# Never serve .env or other dotfiles if they end up under public/ by mistake.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

@@ -1,0 +1,14 @@
+# Fallback only. The subdomain's document root should point straight at
+# /public (cPanel lets you set this when creating the subdomain) — that's
+# the setup this app expects, and it's what keeps schema.sql, .env, and
+# src/ unreachable from the browser. This file exists only in case the
+# document root ends up pointed at the repo root by mistake: it routes
+# everything into /public instead of exposing the rest of the repo.
+
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ /public/$1 [L]
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

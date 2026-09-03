@@ -2,3 +2,8 @@
 /vendor/
 .DS_Store
 *.log
+
+# Uploaded CSVs are deleted right after import, but never commit one that
+# lingers — these contain real client PII.
+/storage/imports/*.csv
+!/storage/imports/.gitkeep

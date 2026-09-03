@@ -73,3 +73,18 @@ function render_bare(string $view, array $data = []): void
     extract($data, EXTR_SKIP);
     require dirname(__DIR__) . '/src/views/' . $view . '.php';
 }
+
+/**
+ * Renders a <select> of CSV column names for the import mapping screen.
+ * @param array<int,string> $header
+ */
+function import_select(array $header, string $name, ?string $selected, bool $required = false): void
+{
+    echo '<select id="' . e(str_replace(['[', ']'], ['_', ''], $name)) . '" name="' . e($name) . '"' . ($required ? ' required' : '') . '>';
+    echo '<option value="">' . ($required ? '— choose a column —' : "— don't import —") . '</option>';
+    foreach ($header as $col) {
+        $isSelected = $selected !== null && $selected === $col;
+        echo '<option value="' . e($col) . '"' . ($isSelected ? ' selected' : '') . '>' . e($col) . '</option>';
+    }
+    echo '</select>';
+}

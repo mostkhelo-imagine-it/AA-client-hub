@@ -87,6 +87,12 @@ final class Access
         return Auth::isAA();
     }
 
+    /** Bulk CSV import touches every client — AA/Admin only, same as the course catalog. */
+    public static function canImportClients(): bool
+    {
+        return Auth::isFullAccess();
+    }
+
     public static function canViewActivityLog(): bool
     {
         return Auth::isFullAccess();

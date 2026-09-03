@@ -29,10 +29,14 @@ src/
   Access.php       ← every "who can see/do what" rule from the spec, in one place
   Activity.php     ← activity_log writes
   Router.php       ← ~50-line router, no dependency
+  Csv.php          ← generic CSV reader (BOM/delimiter handling) used by the importer
+  ImportMapper.php ← guesses CSV column → client field from header text
   controllers/
   views/
 scripts/
   import_fluentcrm_contacts.php  ← one-time migration from a FluentCRM contacts CSV
+storage/
+  imports/         ← uploaded CSVs land here briefly, deleted right after import (git-ignored)
 schema.sql         ← full database schema + a seeded AA account
 .env.example       ← copy to .env and fill in
 ```
@@ -92,10 +96,30 @@ If any of this needs SSH, a cron job, or anything File Manager can't do,
 that's exactly what AA's dev team is there for — nothing here requires it,
 but nothing here avoids it either.
 
-## Migrating existing contacts
+## Importing clients from any CSV
 
-`scripts/import_fluentcrm_contacts.php` reads a FluentCRM/FluentCommunity
-"contacts export" CSV and imports it into `clients`. Run it as a **dry
+**Clients → Import** (AA/Admin only) handles this in the browser now —
+upload any CSV, and it guesses which column feeds which field from the
+header text (Full Name, E-mail, Cell #, whatever the export calls them),
+shows you the guess next to a preview of the actual data, and lets you
+override any of it before anything is saved. It also supports an optional
+tags/labels column with keyword matching for tier (e.g. a tag containing
+"premium" sets Premium), skips duplicate emails by default, and — like
+the CLI script below — never auto-promotes a keyword match to Reality
+Creator; it flags those rows on the results screen for a manual check
+instead, since a tag isn't a signed contract. This is the right tool for
+a one-off spreadsheet or an export from something other than FluentCRM.
+
+The uploaded file is deleted from the server the moment the import
+finishes (success or failure) — it's never kept around or committed
+anywhere (`storage/imports/` is git-ignored for this reason too).
+
+## Migrating existing contacts (FluentCRM/FluentCommunity specifically)
+
+For the FluentCRM export format specifically, `scripts/import_fluentcrm_contacts.php`
+is a more opinionated alternative to the in-app importer above — it
+already knows that format's columns, filters out obvious test rows, and
+catches likely duplicate people under different emails. Run it as a **dry
 run first** — it changes nothing in the database until you pass `--commit`:
 
 ```

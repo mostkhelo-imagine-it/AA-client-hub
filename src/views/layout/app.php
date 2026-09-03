@@ -19,7 +19,10 @@ $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 <div class="topbar">
   <div class="brand">Client Hub</div>
   <nav>
-    <a href="<?= e(base_url('clients')) ?>" class="<?= str_starts_with($path, '/clients') ? 'active' : '' ?>">Clients</a>
+    <a href="<?= e(base_url('clients')) ?>" class="<?= $path === '/clients' || (str_starts_with($path, '/clients/') && $path !== '/clients/import') ? 'active' : '' ?>">Clients</a>
+    <?php if (Access::canImportClients()): ?>
+      <a href="<?= e(base_url('clients/import')) ?>" class="<?= str_starts_with($path, '/clients/import') ? 'active' : '' ?>">Import</a>
+    <?php endif; ?>
     <a href="<?= e(base_url('courses')) ?>" class="<?= str_starts_with($path, '/courses') ? 'active' : '' ?>">Courses</a>
     <?php if (Auth::isAA()): ?>
       <a href="<?= e(base_url('contracts/expiring')) ?>" class="<?= str_starts_with($path, '/contracts') ? 'active' : '' ?>">Contract review</a>

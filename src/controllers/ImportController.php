@@ -19,13 +19,19 @@ final class ImportController
 
         $file = $_FILES['csv'] ?? null;
         if (!$file || $file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) {
-            flash('error', 'Choose a CSV file to upload.');
+            flash('error', 'Choose a CSV or Excel (.xlsx) file to upload.');
+            redirect('/clients/import');
+        }
+
+        $extension = Tabular::extensionOf($file['name']);
+        if (!Tabular::isSupported($file['name'])) {
+            flash('error', 'Only .csv and .xlsx files are supported.');
             redirect('/clients/import');
         }
 
         $storageDir = self::storageDir();
         $token = bin2hex(random_bytes(16));
-        $storedPath = $storageDir . '/' . $token . '.csv';
+        $storedPath = $storageDir . '/' . $token . '.' . $extension;
 
         if (!move_uploaded_file($file['tmp_name'], $storedPath)) {
             flash('error', 'Could not read that upload — try again.');
@@ -33,10 +39,10 @@ final class ImportController
         }
 
         try {
-            $parsed = Csv::read($storedPath, self::PREVIEW_ROWS);
+            $parsed = Tabular::read($storedPath, $extension, self::PREVIEW_ROWS);
         } catch (Throwable $e) {
             @unlink($storedPath);
-            flash('error', "That doesn't look like a valid CSV file.");
+            flash('error', $e->getMessage() ?: "That doesn't look like a valid file.");
             redirect('/clients/import');
         }
 
@@ -46,13 +52,14 @@ final class ImportController
             redirect('/clients/import');
         }
 
-        $totalRows = Csv::countRows($storedPath);
+        $totalRows = Tabular::countRows($storedPath, $extension);
         $guess = ImportMapper::guess($parsed['header']);
 
-        Activity::log('import.upload', null, null, "$token.csv ($totalRows rows)");
+        Activity::log('import.upload', null, null, "$token.$extension ($totalRows rows)");
 
         render('imports/map', [
             'token' => $token,
+            'extension' => $extension,
             'header' => $parsed['header'],
             'previewRows' => $parsed['rows'],
             'totalRows' => $totalRows,
@@ -70,7 +77,12 @@ final class ImportController
             flash('error', 'That import session expired — upload the file again.');
             redirect('/clients/import');
         }
-        $path = self::storageDir() . '/' . $token . '.csv';
+        $extension = (string) ($_POST['ext'] ?? '');
+        if (!in_array($extension, Tabular::ACCEPTED_EXTENSIONS, true)) {
+            flash('error', 'That import session expired — upload the file again.');
+            redirect('/clients/import');
+        }
+        $path = self::storageDir() . '/' . $token . '.' . $extension;
         if (!is_file($path)) {
             flash('error', 'That import session expired — upload the file again.');
             redirect('/clients/import');
@@ -92,7 +104,7 @@ final class ImportController
         // Unchecked checkboxes aren't sent at all — presence in $_POST is the signal, not its value.
         $skipDuplicates = isset($_POST['skip_duplicates']);
 
-        $parsed = Csv::read($path);
+        $parsed = Tabular::read($path, $extension);
 
         $existingEmails = self::existingEmails();
 

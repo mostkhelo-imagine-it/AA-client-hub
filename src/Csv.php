@@ -30,7 +30,7 @@ final class Csv
         fwrite($fh, $raw);
         rewind($fh);
 
-        $header = fgetcsv($fh, 0, $delimiter);
+        $header = fgetcsv($fh, 0, $delimiter, '"', '\\');
         if ($header === false) {
             fclose($fh);
             return ['header' => [], 'rows' => [], 'delimiter' => $delimiter];
@@ -41,7 +41,7 @@ final class Csv
 
         $rows = [];
         $count = 0;
-        while (($line = fgetcsv($fh, 0, $delimiter)) !== false) {
+        while (($line = fgetcsv($fh, 0, $delimiter, '"', '\\')) !== false) {
             if (count($line) === 1 && $line[0] === null) {
                 continue; // blank line
             }
@@ -72,9 +72,9 @@ final class Csv
         $fh = fopen('php://temp', 'r+');
         fwrite($fh, $raw);
         rewind($fh);
-        fgetcsv($fh, 0, $delimiter); // skip header
+        fgetcsv($fh, 0, $delimiter, '"', '\\'); // skip header
         $count = 0;
-        while (($line = fgetcsv($fh, 0, $delimiter)) !== false) {
+        while (($line = fgetcsv($fh, 0, $delimiter, '"', '\\')) !== false) {
             if (count($line) === 1 && $line[0] === null) {
                 continue;
             }

@@ -1,5 +1,6 @@
 <?php
 /** @var string $token */
+/** @var string $extension */
 /** @var array $header */
 /** @var array $previewRows */
 /** @var int $totalRows */
@@ -25,6 +26,7 @@
 <form method="post" action="<?= e(base_url('clients/import/commit')) ?>">
   <?= csrf_field() ?>
   <input type="hidden" name="token" value="<?= e($token) ?>">
+  <input type="hidden" name="ext" value="<?= e($extension) ?>">
 
   <div class="card">
     <h2 style="margin-top:0;">Name</h2>

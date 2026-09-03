@@ -30,7 +30,9 @@ src/
   Activity.php     ← activity_log writes
   Router.php       ← ~50-line router, no dependency
   Csv.php          ← generic CSV reader (BOM/delimiter handling) used by the importer
-  ImportMapper.php ← guesses CSV column → client field from header text
+  Xlsx.php         ← dependency-free .xlsx reader (ZipArchive + SimpleXML)
+  Tabular.php      ← picks Csv vs Xlsx by file extension
+  ImportMapper.php ← guesses CSV/Excel column → client field from header text
   controllers/
   views/
 scripts/
@@ -96,13 +98,26 @@ If any of this needs SSH, a cron job, or anything File Manager can't do,
 that's exactly what AA's dev team is there for — nothing here requires it,
 but nothing here avoids it either.
 
-## Importing clients from any CSV
+## Importing clients from any CSV or Excel file
 
 **Clients → Import** (AA/Admin only) handles this in the browser now —
-upload any CSV, and it guesses which column feeds which field from the
-header text (Full Name, E-mail, Cell #, whatever the export calls them),
-shows you the guess next to a preview of the actual data, and lets you
-override any of it before anything is saved. It also supports an optional
+upload any CSV or .xlsx file, and it guesses which column feeds which
+field from the header text (Full Name, E-mail, Cell #, whatever the
+export calls them), shows you the guess next to a preview of the actual
+data, and lets you override any of it before anything is saved.
+
+Excel support (`src/Xlsx.php`) is a small dependency-free reader — no
+PhpSpreadsheet, no Composer — built on PHP's bundled `ZipArchive` and
+`SimpleXML` (an .xlsx is just a zip of XML files under the hood). Both
+ship with PHP by default and Homebrew's `php` formula includes them, so
+this should just work, but if a server ever has them compiled out, the
+import screen shows a clear error rather than a blank crash. Only the
+first sheet is read, only modern .xlsx (not the legacy binary .xls), and
+formulas come through as their last-saved value rather than being
+recalculated — none of which matters for the columns this importer
+actually maps.
+
+It also supports an optional
 tags/labels column with keyword matching for tier (e.g. a tag containing
 "premium" sets Premium), skips duplicate emails by default, and — like
 the CLI script below — never auto-promotes a keyword match to Reality

@@ -9,6 +9,8 @@ require dirname(__DIR__) . '/src/Access.php';
 require dirname(__DIR__) . '/src/Activity.php';
 require dirname(__DIR__) . '/src/Router.php';
 require dirname(__DIR__) . '/src/Csv.php';
+require dirname(__DIR__) . '/src/Xlsx.php';
+require dirname(__DIR__) . '/src/Tabular.php';
 require dirname(__DIR__) . '/src/ImportMapper.php';
 require dirname(__DIR__) . '/src/controllers/AuthController.php';
 require dirname(__DIR__) . '/src/controllers/ClientController.php';

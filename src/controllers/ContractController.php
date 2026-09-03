@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 final class ContractController
 {
-    /** AA/Admin: open a fresh contract for a Reality Creator client (first one, or a manual renewal). */
+    /** Open a fresh contract for a Reality Creator client (first one, or a manual renewal). */
     public static function store(array $routeParams): void
     {
-        Auth::requireRole('aa', 'admin');
+        Auth::requireLogin();
         $clientId = (int) $routeParams['id'];
 
         $startDate = (string) ($_POST['start_date'] ?? date('Y-m-d'));
@@ -52,14 +52,14 @@ final class ContractController
     }
 
     /**
-     * AA only: contracts that ended with nothing renewed on file. This is
-     * computed live (end_date has passed, status is still active/pending)
-     * rather than relying on a cron flip — nothing here waits on a job that
-     * might not be scheduled yet.
+     * Contracts that ended with nothing renewed on file. This is computed
+     * live (end_date has passed, status is still active/pending) rather
+     * than relying on a cron flip — nothing here waits on a job that might
+     * not be scheduled yet.
      */
     public static function expiryReview(): void
     {
-        Auth::requireRole('aa');
+        Auth::requireLogin();
 
         $stmt = Db::pdo()->query(
             'SELECT ct.*, cl.full_name, cl.id AS client_id
@@ -77,10 +77,10 @@ final class ContractController
         render('contracts/expiry_review', ['expired' => $expired]);
     }
 
-    /** AA decides: renew (redirect to the client to open a new contract) or drop to Basic. */
+    /** Renew (redirect to the client to open a new contract) or drop to Basic. */
     public static function decide(array $routeParams): void
     {
-        Auth::requireRole('aa');
+        Auth::requireLogin();
         $contractId = (int) $routeParams['id'];
         $action = (string) ($_POST['action'] ?? '');
 

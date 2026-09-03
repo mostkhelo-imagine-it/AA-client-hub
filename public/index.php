@@ -61,13 +61,11 @@ $router->post('/contracts/:id/decide', [ContractController::class, 'decide']);
 $router->get('/courses', [CourseController::class, 'index']);
 $router->post('/courses', [CourseController::class, 'store']);
 
-// -- Staff — page visible to AA/Super Admin/Admin; most actions still AA-only -----
+// -- Staff — page visible to everyone; creating/disabling/removing accounts is AA-only -----
 $router->get('/staff', [StaffController::class, 'index']);
 $router->post('/staff', [StaffController::class, 'store']);
 $router->post('/staff/:id/toggle-status', [StaffController::class, 'toggleStatus']);
 $router->post('/staff/:id/delete', [StaffController::class, 'destroy']);
-$router->post('/staff/assignments', [StaffController::class, 'assign']);
-$router->post('/staff/assignments/:id/delete', [StaffController::class, 'unassign']);
 
 // -- Activity log -------------------------------------------------------
 $router->get('/activity', [ActivityController::class, 'index']);

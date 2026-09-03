@@ -21,7 +21,7 @@ $tierLabel = ['basic' => 'Basic', 'premium' => 'Premium', 'reality_creator' => '
 </form>
 
 <?php if (!$clients): ?>
-  <p class="empty">No clients match. <?= Auth::isAssistant() ? 'You only see clients assigned to you — ask AA or an admin if you expect to see more.' : '' ?></p>
+  <p class="empty">No clients match.</p>
 <?php else: ?>
 <div class="card" style="padding:0;">
   <table>

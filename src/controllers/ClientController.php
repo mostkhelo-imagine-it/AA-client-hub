@@ -10,10 +10,8 @@ final class ClientController
         $search = trim((string) ($_GET['q'] ?? ''));
         $tier = (string) ($_GET['tier'] ?? '');
 
-        [$scopeSql, $scopeParams] = Access::clientScopeSql();
-
         $where = ['1=1'];
-        $params = $scopeParams;
+        $params = [];
 
         if ($search !== '') {
             // Real (non-emulated) prepares can't reuse one named placeholder more than
@@ -29,7 +27,7 @@ final class ClientController
             $params['tier'] = $tier;
         }
 
-        $sql = 'SELECT c.* FROM clients c WHERE ' . implode(' AND ', $where) . ' ' . $scopeSql
+        $sql = 'SELECT c.* FROM clients c WHERE ' . implode(' AND ', $where)
              . ' ORDER BY c.full_name ASC LIMIT 500';
         $stmt = Db::pdo()->prepare($sql);
         $stmt->execute($params);
@@ -46,7 +44,6 @@ final class ClientController
     {
         Auth::requireLogin();
         $clientId = (int) $routeParams['id'];
-        Access::requireCanViewClient($clientId);
 
         $client = self::find($clientId);
         if (!$client) {
@@ -122,11 +119,6 @@ final class ClientController
         if (!in_array($tier, ['basic', 'premium', 'reality_creator'], true)) {
             $tier = 'basic';
         }
-        // Assistants may only create clients they'll be assigned to — the
-        // assignment itself is a separate AA/Admin action, so a new client
-        // an assistant adds is invisible to them until assigned. That's a
-        // deliberate gap to flag with AA rather than silently auto-assign.
-
         // Normalize once so "Test@x.com" and "test@x.com" are treated as the same
         // client — matches how the CSV importer already compares emails.
         $email = self::nullIfBlank($_POST['email'] ?? '');
@@ -173,12 +165,10 @@ final class ClientController
         redirect('/clients/' . $clientId);
     }
 
-    /** Edit form — AA and Super Admin only. Admin can add client data but not change what's already there. */
     public static function edit(array $routeParams): void
     {
         Auth::requireLogin();
         $clientId = (int) $routeParams['id'];
-        Access::requireCanViewClient($clientId);
 
         if (!Access::canEditClient()) {
             http_response_code(403);
@@ -267,7 +257,7 @@ final class ClientController
         redirect('/clients/' . $clientId);
     }
 
-    /** Permanently removes a client and everything tied to it (course records, contracts, session logs, assignments — all cascade). AA and Super Admin only. */
+    /** Permanently removes a client and everything tied to it (course records, contracts, session logs — all cascade). */
     public static function destroy(array $routeParams): void
     {
         Auth::requireLogin();

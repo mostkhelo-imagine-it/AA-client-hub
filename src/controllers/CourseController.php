@@ -21,7 +21,7 @@ final class CourseController
 
     public static function store(): void
     {
-        Auth::requireRole('aa', 'admin');
+        Auth::requireLogin();
 
         $title = trim((string) ($_POST['title'] ?? ''));
         if ($title === '') {

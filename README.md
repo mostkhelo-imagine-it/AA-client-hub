@@ -7,14 +7,13 @@ implementation of that spec, plain PHP + MySQL, no framework, no build step.
 
 ## Roles
 
-Four now, top to bottom: **AA** (owner, full control), **Super Admin**
-(edits and deletes client records, removes Admin/Assistant accounts),
-**Admin** (adds client data — new clients, course records, sessions,
-contracts — but can't edit or delete existing records, and can only
-remove Assistant accounts), **Assistant** (scoped to assigned clients
-only). The exact rule for every action lives in `src/Access.php`, in one
-place — that file is the source of truth if this summary and the code
-ever disagree.
+Two: **AA** (owner) and **Staff** (everyone else). Staff have the same
+access to client data as AA — add, edit, delete clients; log courses,
+sessions, and contracts; import; view the activity log. The only thing
+reserved for AA is managing staff accounts themselves — creating,
+disabling, or removing one. The exact rule for every action lives in
+`src/Access.php`, in one place — that file is the source of truth if
+this summary and the code ever disagree.
 
 ## Stack
 
@@ -103,7 +102,7 @@ Either way, after the code is on the server:
 4. Turn on **AutoSSL** for the subdomain (free, one click in cPanel) so the
    whole app runs over HTTPS — sessions and passwords depend on this.
 5. Log in with the seeded AA account, reset the password immediately, then
-   use **Staff → Add staff account** to create real admin/assistant logins.
+   use **Staff → Add staff account** to create real staff logins.
 
 If any of this needs SSH, a cron job, or anything File Manager can't do,
 that's exactly what AA's dev team is there for — nothing here requires it,
@@ -137,19 +136,29 @@ A brand-new database created from the current `schema.sql` already has
 this — this section only matters for a database set up before this
 change.
 
-`users.role` now also accepts `super_admin`, between `aa` and `admin`
-in the hierarchy (see **Roles** above). On a database you already
-created, widen the enum before creating a Super Admin account:
+`users.role` is just `aa` or `staff` now (see **Roles** above) — a
+short-lived `super_admin`/`admin`/`assistant` split existed for a bit
+and is gone. If your database ever had those values, collapse them to
+`staff` before narrowing the enum:
 
 ```sql
-ALTER TABLE users MODIFY role ENUM('aa','super_admin','admin','assistant') NOT NULL;
+UPDATE users SET role = 'staff' WHERE role <> 'aa';
+ALTER TABLE users MODIFY role ENUM('aa','staff') NOT NULL;
 ```
 
-A brand-new database from the current `schema.sql` already has this.
+The `client_assignments` table (used to scope Assistants to specific
+clients) is gone too — every Staff account now sees every client, so
+there's nothing left to assign. Drop it if it exists:
+
+```sql
+DROP TABLE IF EXISTS client_assignments;
+```
+
+A brand-new database from the current `schema.sql` already has all of this.
 
 ## Importing clients from any CSV or Excel file
 
-**Clients → Import** (AA/Admin only) handles this in the browser now —
+**Clients → Import** handles this in the browser now —
 upload any CSV or .xlsx file, and it guesses which column feeds which
 field from the header text (Full Name, E-mail, Cell #, whatever the
 export calls them), shows you the guess next to a preview of the actual
@@ -216,12 +225,12 @@ platform export, a spreadsheet, FluentCommunity's own course data, etc.).
 
 ## What's built vs. what's next
 
-Built (Phases 1–4 from the spec): login + forced password reset, role
-scoping (AA/Admin see everyone, Assistants see only assigned clients),
-client directory + profile, course catalog, manual course-record logging,
-Reality Creator contracts with the renew-or-drop-to-Basic review queue,
-session logs with AA-only delete, staff accounts + assignments, activity
-log.
+Built (Phases 1–4 from the spec): login + forced password reset, two
+roles (AA and Staff, both with full access to client data — AA alone
+manages staff accounts), client directory + profile with edit/delete,
+course catalog, manual course-record logging, Reality Creator contracts
+with the renew-or-drop-to-Basic review queue, session logs, staff
+accounts, activity log, and a general CSV/Excel client importer.
 
 Not built yet, on purpose (Phase 5 per the spec): the FluentCommunity/
 FluentCart webhook that automates course-purchase sync. That's the last

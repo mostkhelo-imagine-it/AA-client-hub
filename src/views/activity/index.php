@@ -1,6 +1,6 @@
 <?php /** @var array $entries */ ?>
 <h1>Activity log</h1>
-<p class="muted"><?= Auth::isAA() ? 'Every action across the team.' : 'Your own actions.' ?></p>
+<p class="muted">Every action across the team.</p>
 
 <div class="card" style="padding:0;">
   <table>

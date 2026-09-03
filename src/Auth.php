@@ -78,25 +78,9 @@ final class Auth
         return self::role() === 'aa';
     }
 
-    public static function isSuperAdmin(): bool
+    public static function isStaff(): bool
     {
-        return self::role() === 'super_admin';
-    }
-
-    public static function isAdmin(): bool
-    {
-        return self::role() === 'admin';
-    }
-
-    public static function isAssistant(): bool
-    {
-        return self::role() === 'assistant';
-    }
-
-    /** AA, Super Admin, and Admin all get the "sees everything" tier of visibility. */
-    public static function isFullAccess(): bool
-    {
-        return self::isAA() || self::isSuperAdmin() || self::isAdmin();
+        return self::role() === 'staff';
     }
 
     public static function requireLogin(): void

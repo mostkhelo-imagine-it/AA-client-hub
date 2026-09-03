@@ -9,148 +9,84 @@ declare(strict_types=1);
  */
 final class Access
 {
-    /** Can the current user see this client at all? */
-    public static function canViewClient(int $clientId): bool
-    {
-        if (Auth::isFullAccess()) {
-            return true; // AA + Super Admin + Admin see every client
-        }
-        if (Auth::isAssistant()) {
-            return self::isAssigned($clientId, Auth::id());
-        }
-        return false;
-    }
+    // Client data — clients, contracts, sessions, courses, import, activity
+    // log — is equally open to AA and Staff. The only thing that stays
+    // AA-only is managing staff accounts themselves (see canManageStaff /
+    // canDeleteStaff below). Any logged-in user reaches this point via
+    // Auth::requireLogin() in the controller, so these are simple "yes."
 
-    /**
-     * Editing or deleting an existing client record — AA and Super Admin only.
-     * Admin can still add client data (create clients, log courses/sessions,
-     * manage contracts/catalog below) but not change or remove what's there.
-     */
     public static function canEditClient(): bool
     {
-        return Auth::isAA() || Auth::isSuperAdmin();
+        return true;
     }
 
     public static function canDeleteClient(): bool
     {
-        return Auth::isAA() || Auth::isSuperAdmin();
+        return true;
     }
 
-    public static function isAssigned(int $clientId, int $userId): bool
-    {
-        $stmt = Db::pdo()->prepare(
-            'SELECT 1 FROM client_assignments WHERE client_id = :c AND user_id = :u LIMIT 1'
-        );
-        $stmt->execute(['c' => $clientId, 'u' => $userId]);
-        return (bool) $stmt->fetchColumn();
-    }
-
-    /** SQL fragment + params to scope a `clients c` query to what this user may see. */
-    public static function clientScopeSql(): array
-    {
-        if (Auth::isFullAccess()) {
-            return ['', []];
-        }
-        // Assistant: only assigned clients.
-        return [
-            'AND c.id IN (SELECT client_id FROM client_assignments WHERE user_id = :scope_user_id)',
-            ['scope_user_id' => Auth::id()],
-        ];
-    }
-
-    /** Reality Creator session progress: AA + Admin only, per the spec. */
     public static function canViewSessionLogs(): bool
     {
-        return Auth::isFullAccess();
+        return true;
     }
 
     public static function canLogSession(): bool
     {
-        return Auth::isFullAccess();
+        return true;
     }
 
-    /** Deleting session history is AA-only — admins can add, never remove. */
     public static function canDeleteSessionLog(): bool
     {
-        return Auth::isAA();
+        return true;
     }
 
     public static function canManageContracts(): bool
     {
-        return Auth::isFullAccess();
+        return true;
     }
 
     public static function canManageCourseCatalog(): bool
     {
-        return Auth::isFullAccess();
+        return true;
     }
 
-    /** Assistants can log attendance/purchases only for clients assigned to them. */
     public static function canLogCourseRecord(int $clientId): bool
     {
-        if (Auth::isFullAccess()) {
-            return true;
-        }
-        if (Auth::isAssistant()) {
-            return self::isAssigned($clientId, Auth::id());
-        }
-        return false;
+        return true;
     }
 
-    /** Creating accounts and managing client assignments stays AA-only. */
+    /** Bulk CSV/Excel import touches every client — open to any logged-in user. */
+    public static function canImportClients(): bool
+    {
+        return true;
+    }
+
+    public static function canViewActivityLog(): bool
+    {
+        return true;
+    }
+
+    /** No per-role filtering — everyone sees the full trail. */
+    public static function activityLogUserFilter(): ?int
+    {
+        return null;
+    }
+
+    /** Creating, disabling, or removing staff accounts stays AA-only. */
     public static function canManageStaff(): bool
     {
         return Auth::isAA();
     }
 
-    /** AA, Super Admin, and Admin all need the staff page — to remove different tiers below them. */
+    /** Staff can see the staff list (who has accounts); only AA can act on it. */
     public static function canViewStaffPage(): bool
     {
-        return Auth::isFullAccess();
+        return true;
     }
 
-    /**
-     * Who can remove a given staff account, based on the target's role:
-     * AA removes anyone but another AA; Super Admin removes Admin and
-     * Assistant accounts; Admin removes Assistant accounts only.
-     */
+    /** Only AA can remove a staff account, and never the AA account itself. */
     public static function canDeleteStaff(string $targetRole): bool
     {
-        if (Auth::isAA()) {
-            return $targetRole !== 'aa';
-        }
-        if (Auth::isSuperAdmin()) {
-            return in_array($targetRole, ['admin', 'assistant'], true);
-        }
-        if (Auth::isAdmin()) {
-            return $targetRole === 'assistant';
-        }
-        return false;
-    }
-
-    /** Bulk CSV import touches every client — AA/Admin only, same as the course catalog. */
-    public static function canImportClients(): bool
-    {
-        return Auth::isFullAccess();
-    }
-
-    public static function canViewActivityLog(): bool
-    {
-        return Auth::isFullAccess();
-    }
-
-    /** Admins only see their own actions in the activity log; AA and Super Admin see everyone's. */
-    public static function activityLogUserFilter(): ?int
-    {
-        return Auth::isAdmin() ? Auth::id() : null;
-    }
-
-    public static function requireCanViewClient(int $clientId): void
-    {
-        if (!self::canViewClient($clientId)) {
-            http_response_code(403);
-            render('errors/403');
-            exit;
-        }
+        return Auth::isAA() && $targetRole !== 'aa';
     }
 }

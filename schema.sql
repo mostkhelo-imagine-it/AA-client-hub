@@ -6,13 +6,12 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ---------------------------------------------------------------
--- users — staff accounts (AA, Super Admin, Admin, Assistant)
+-- users — staff accounts (AA, Staff)
 --
--- Role hierarchy, top to bottom: aa > super_admin > admin > assistant.
--- Removal rights: AA removes anyone; super_admin removes admin/assistant
--- accounts; admin removes assistant accounts only. Client-record edit and
--- delete are AA + super_admin only — admin can add client data (create
--- clients, log courses/sessions) but not edit or delete existing records.
+-- Just two roles. Staff have the same access to client data as AA
+-- (add/edit/delete clients, contracts, sessions, courses, import,
+-- activity log) — the only thing reserved for AA is managing staff
+-- accounts themselves (creating, disabling, or removing one).
 -- See Access.php for exactly where each of these is enforced.
 -- ---------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
@@ -20,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   name          VARCHAR(150) NOT NULL,
   email         VARCHAR(190) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role          ENUM('aa','super_admin','admin','assistant') NOT NULL,
+  role          ENUM('aa','staff') NOT NULL,
   status        ENUM('active','disabled') NOT NULL DEFAULT 'active',
   must_reset_password TINYINT(1) NOT NULL DEFAULT 1,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -68,21 +67,6 @@ CREATE TABLE IF NOT EXISTS contracts (
   CONSTRAINT fk_contracts_created_by FOREIGN KEY (created_by) REFERENCES users(id),
   KEY idx_contracts_client (client_id),
   KEY idx_contracts_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------
--- client_assignments — who (assistants) can see which clients
--- ---------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS client_assignments (
-  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  client_id    INT UNSIGNED NOT NULL,
-  user_id      INT UNSIGNED NOT NULL,
-  assigned_by  INT UNSIGNED NOT NULL,
-  assigned_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_assign_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
-  CONSTRAINT fk_assign_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_assign_by FOREIGN KEY (assigned_by) REFERENCES users(id),
-  UNIQUE KEY uq_assignment (client_id, user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------

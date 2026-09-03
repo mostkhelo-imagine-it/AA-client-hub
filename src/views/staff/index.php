@@ -3,7 +3,7 @@
 $roleLabel = ['aa' => 'AA', 'staff' => 'Staff'];
 $canManage = Access::canManageStaff(); // creating/disabling/removing accounts — AA only
 ?>
-<h1>Staff & assignments</h1>
+<h1>Staff</h1>
 
 <div class="card" style="padding:0;">
   <table>

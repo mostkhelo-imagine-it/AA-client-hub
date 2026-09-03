@@ -49,7 +49,14 @@ final class StaffController
                 'role' => $role,
             ]);
         } catch (PDOException $e) {
-            flash('error', 'That email is already in use.');
+            // Only a real duplicate-email violation gets the friendly message —
+            // any other DB error (e.g. `role` column not yet migrated to accept
+            // 'staff') surfaces as-is so it doesn't get misdiagnosed as this.
+            if ($e->getCode() === '23000') {
+                flash('error', 'That email is already in use.');
+                redirect('/staff');
+            }
+            flash('error', 'Could not create the account: ' . $e->getMessage());
             redirect('/staff');
         }
 

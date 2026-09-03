@@ -59,15 +59,8 @@ final class ClientController
         );
         $courseRecords->execute(['id' => $clientId]);
 
-        $contracts = [];
         $sessionLogs = [];
         if ($client['tier'] === 'reality_creator') {
-            $contractStmt = Db::pdo()->prepare(
-                'SELECT * FROM contracts WHERE client_id = :id ORDER BY start_date DESC'
-            );
-            $contractStmt->execute(['id' => $clientId]);
-            $contracts = $contractStmt->fetchAll();
-
             if (Access::canViewSessionLogs()) {
                 $logStmt = Db::pdo()->prepare(
                     'SELECT sl.*, u.name AS logged_by_name FROM session_logs sl
@@ -86,13 +79,11 @@ final class ClientController
         render('clients/show', [
             'client' => $client,
             'courseRecords' => $courseRecords->fetchAll(),
-            'contracts' => $contracts,
             'sessionLogs' => $sessionLogs,
             'courses' => $courses,
             'canViewSessionLogs' => Access::canViewSessionLogs(),
             'canLogSession' => Access::canLogSession(),
             'canDeleteSessionLog' => Access::canDeleteSessionLog(),
-            'canManageContracts' => Access::canManageContracts(),
             'canLogCourseRecord' => Access::canLogCourseRecord($clientId),
             'canEditClient' => Access::canEditClient(),
             'canDeleteClient' => Access::canDeleteClient(),

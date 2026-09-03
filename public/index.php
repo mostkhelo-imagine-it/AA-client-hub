@@ -51,11 +51,13 @@ $router->post('/clients/:id/delete', [ClientController::class, 'destroy']);
 $router->post('/clients/:id/course-records', [ClientController::class, 'storeCourseRecord']);
 $router->post('/clients/:id/sessions', [SessionLogController::class, 'store']);
 $router->post('/clients/:id/sessions/:logId/delete', [SessionLogController::class, 'destroy']);
-$router->post('/clients/:id/contracts', [ContractController::class, 'store']);
 
-// -- Contracts -------------------------------------------------------
-$router->get('/contracts/expiring', [ContractController::class, 'expiryReview']);
-$router->post('/contracts/:id/decide', [ContractController::class, 'decide']);
+// -- Contracts — disabled for now, ContractController.php stays for when
+// this gets rebuilt. Re-add these three lines (and the require above) to
+// bring it back:
+//   $router->post('/clients/:id/contracts', [ContractController::class, 'store']);
+//   $router->get('/contracts/expiring', [ContractController::class, 'expiryReview']);
+//   $router->post('/contracts/:id/decide', [ContractController::class, 'decide']);
 
 // -- Courses -------------------------------------------------------
 $router->get('/courses', [CourseController::class, 'index']);

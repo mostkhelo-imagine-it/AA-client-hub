@@ -228,9 +228,16 @@ platform export, a spreadsheet, FluentCommunity's own course data, etc.).
 Built (Phases 1–4 from the spec): login + forced password reset, two
 roles (AA and Staff, both with full access to client data — AA alone
 manages staff accounts), client directory + profile with edit/delete,
-course catalog, manual course-record logging, Reality Creator contracts
-with the renew-or-drop-to-Basic review queue, session logs, staff
+course catalog, manual course-record logging, session logs, staff
 accounts, activity log, and a general CSV/Excel client importer.
+
+Disabled for now, to rebuild later: the Reality Creator contract
+screens (open/renew a contract, the expiry review queue). The code is
+still in `src/controllers/ContractController.php` and
+`src/views/contracts/`, and the `contracts` table is still in
+`schema.sql` — just unhooked from routes and nav
+(`public/index.php`, `src/views/layout/app.php`) and from the client
+profile page. Re-wire those to bring it back.
 
 Not built yet, on purpose (Phase 5 per the spec): the FluentCommunity/
 FluentCart webhook that automates course-purchase sync. That's the last

@@ -1,21 +1,15 @@
 <?php
 /** @var array $client */
 /** @var array $courseRecords */
-/** @var array $contracts */
 /** @var array $sessionLogs */
 /** @var array $courses */
 /** @var bool $canViewSessionLogs */
 /** @var bool $canLogSession */
 /** @var bool $canDeleteSessionLog */
-/** @var bool $canManageContracts */
 /** @var bool $canLogCourseRecord */
 /** @var bool $canEditClient */
 /** @var bool $canDeleteClient */
 $tierLabel = ['basic' => 'Basic', 'premium' => 'Premium', 'reality_creator' => 'Reality Creator'];
-$activeContract = null;
-foreach ($contracts as $c) {
-    if ($c['status'] === 'active') { $activeContract = $c; break; }
-}
 ?>
 <div style="display:flex; justify-content:space-between; align-items:baseline;">
   <h1><?= e($client['full_name']) ?> <span class="pill <?= e($client['tier']) ?>"><?= e($tierLabel[$client['tier']] ?? $client['tier']) ?></span></h1>
@@ -44,40 +38,6 @@ foreach ($contracts as $c) {
   <?php endif; ?>
   <?php if ($client['notes']): ?><p style="margin-top:12px;"><?= nl2br(e($client['notes'])) ?></p><?php endif; ?>
 </div>
-
-<?php if ($client['tier'] === 'reality_creator'): ?>
-<div class="card" id="new-contract">
-  <h2 style="margin-top:0;">Contract</h2>
-  <?php if ($contracts): ?>
-    <table>
-      <thead><tr><th>Start</th><th>End</th><th>Status</th></tr></thead>
-      <tbody>
-        <?php foreach ($contracts as $c): ?>
-          <tr><td><?= e($c['start_date']) ?></td><td><?= e($c['end_date']) ?></td><td><?= e(ucfirst(str_replace('_', ' ', $c['status']))) ?></td></tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-  <?php else: ?>
-    <p class="muted">No contract on file yet.</p>
-  <?php endif; ?>
-
-  <?php if ($canManageContracts): ?>
-    <h2>Open / renew contract</h2>
-    <form method="post" action="<?= e(base_url('clients/' . $client['id'] . '/contracts')) ?>">
-      <?= csrf_field() ?>
-      <?php if ($activeContract): ?>
-        <input type="hidden" name="renewed_from" value="<?= e((string) $activeContract['id']) ?>">
-        <p class="muted">This renews the current contract (started <?= e($activeContract['start_date']) ?>).</p>
-      <?php endif; ?>
-      <div class="grid-2">
-        <div><label for="start_date">Start date</label><input id="start_date" type="date" name="start_date" required></div>
-        <div><label for="end_date">End date</label><input id="end_date" type="date" name="end_date" required></div>
-      </div>
-      <div class="actions"><button class="btn primary" type="submit">Save contract</button></div>
-    </form>
-  <?php endif; ?>
-</div>
-<?php endif; ?>
 
 <div class="card">
   <h2 style="margin-top:0;">Course history</h2>

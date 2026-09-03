@@ -24,7 +24,6 @@ $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
       <a href="<?= e(base_url('clients/import')) ?>" class="<?= str_starts_with($path, '/clients/import') ? 'active' : '' ?>">Import</a>
     <?php endif; ?>
     <a href="<?= e(base_url('courses')) ?>" class="<?= str_starts_with($path, '/courses') ? 'active' : '' ?>">Courses</a>
-    <a href="<?= e(base_url('contracts/expiring')) ?>" class="<?= str_starts_with($path, '/contracts') ? 'active' : '' ?>">Contract review</a>
     <?php if (Access::canViewStaffPage()): ?>
       <a href="<?= e(base_url('staff')) ?>" class="<?= str_starts_with($path, '/staff') ? 'active' : '' ?>">Staff</a>
     <?php endif; ?>

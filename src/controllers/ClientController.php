@@ -16,8 +16,13 @@ final class ClientController
         $params = $scopeParams;
 
         if ($search !== '') {
-            $where[] = '(c.full_name LIKE :q OR c.email LIKE :q OR c.phone LIKE :q)';
-            $params['q'] = '%' . $search . '%';
+            // Real (non-emulated) prepares can't reuse one named placeholder more than
+            // once per query, so each LIKE gets its own — all bound to the same value.
+            $where[] = '(c.full_name LIKE :q1 OR c.email LIKE :q2 OR c.phone LIKE :q3)';
+            $needle = '%' . $search . '%';
+            $params['q1'] = $needle;
+            $params['q2'] = $needle;
+            $params['q3'] = $needle;
         }
         if (in_array($tier, ['basic', 'premium', 'reality_creator'], true)) {
             $where[] = 'c.tier = :tier';

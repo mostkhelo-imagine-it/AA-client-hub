@@ -97,6 +97,8 @@ final class ClientController
             'canDeleteSessionLog' => Access::canDeleteSessionLog(),
             'canManageContracts' => Access::canManageContracts(),
             'canLogCourseRecord' => Access::canLogCourseRecord($clientId),
+            'canEditClient' => Access::canEditClient(),
+            'canDeleteClient' => Access::canDeleteClient(),
         ]);
     }
 
@@ -125,24 +127,170 @@ final class ClientController
         // an assistant adds is invisible to them until assigned. That's a
         // deliberate gap to flag with AA rather than silently auto-assign.
 
+        // Normalize once so "Test@x.com" and "test@x.com" are treated as the same
+        // client — matches how the CSV importer already compares emails.
+        $email = self::nullIfBlank($_POST['email'] ?? '');
+        if ($email !== null) {
+            $email = mb_strtolower($email);
+            $existing = self::findByEmail($email);
+            if ($existing) {
+                flash('error', $name . ' wasn\'t added — ' . $existing['full_name'] . ' already uses that email. Showing their profile instead.');
+                redirect('/clients/' . $existing['id']);
+            }
+        }
+
         $stmt = Db::pdo()->prepare(
             'INSERT INTO clients (full_name, email, phone, address, source, tier, notes)
              VALUES (:full_name, :email, :phone, :address, :source, :tier, :notes)'
         );
-        $stmt->execute([
-            'full_name' => $name,
-            'email' => self::nullIfBlank($_POST['email'] ?? ''),
-            'phone' => self::nullIfBlank($_POST['phone'] ?? ''),
-            'address' => self::nullIfBlank($_POST['address'] ?? ''),
-            'source' => self::nullIfBlank($_POST['source'] ?? ''),
-            'tier' => $tier,
-            'notes' => self::nullIfBlank($_POST['notes'] ?? ''),
-        ]);
+        try {
+            $stmt->execute([
+                'full_name' => $name,
+                'email' => $email,
+                'phone' => self::nullIfBlank($_POST['phone'] ?? ''),
+                'address' => self::nullIfBlank($_POST['address'] ?? ''),
+                'source' => self::nullIfBlank($_POST['source'] ?? ''),
+                'tier' => $tier,
+                'notes' => self::nullIfBlank($_POST['notes'] ?? ''),
+            ]);
+        } catch (PDOException $e) {
+            // Belt-and-suspenders against a race between the check above and this
+            // insert (two people submitting the same email at once) — only meaningful
+            // once the uq_clients_email index from schema.sql is actually in place.
+            if ($e->getCode() === '23000' && $email !== null) {
+                $existing = self::findByEmail($email);
+                if ($existing) {
+                    flash('error', $name . ' wasn\'t added — ' . $existing['full_name'] . ' already uses that email. Showing their profile instead.');
+                    redirect('/clients/' . $existing['id']);
+                }
+            }
+            throw $e;
+        }
         $clientId = (int) Db::pdo()->lastInsertId();
         Activity::log('client.create', 'client', $clientId);
 
         flash('success', 'Client added.');
         redirect('/clients/' . $clientId);
+    }
+
+    /** Edit form — AA and Super Admin only. Admin can add client data but not change what's already there. */
+    public static function edit(array $routeParams): void
+    {
+        Auth::requireLogin();
+        $clientId = (int) $routeParams['id'];
+        Access::requireCanViewClient($clientId);
+
+        if (!Access::canEditClient()) {
+            http_response_code(403);
+            render('errors/403');
+            return;
+        }
+
+        $client = self::find($clientId);
+        if (!$client) {
+            http_response_code(404);
+            render('errors/404');
+            return;
+        }
+
+        render('clients/edit', ['client' => $client]);
+    }
+
+    public static function update(array $routeParams): void
+    {
+        Auth::requireLogin();
+        $clientId = (int) $routeParams['id'];
+
+        if (!Access::canEditClient()) {
+            http_response_code(403);
+            render('errors/403');
+            return;
+        }
+
+        $client = self::find($clientId);
+        if (!$client) {
+            http_response_code(404);
+            render('errors/404');
+            return;
+        }
+
+        $name = trim((string) ($_POST['full_name'] ?? ''));
+        if ($name === '') {
+            flash('error', 'Full name is required.');
+            redirect('/clients/' . $clientId . '/edit');
+        }
+
+        $tier = (string) ($_POST['tier'] ?? $client['tier']);
+        if (!in_array($tier, ['basic', 'premium', 'reality_creator'], true)) {
+            $tier = $client['tier'];
+        }
+
+        $email = self::nullIfBlank($_POST['email'] ?? '');
+        if ($email !== null) {
+            $email = mb_strtolower($email);
+            $existing = self::findByEmail($email);
+            if ($existing && (int) $existing['id'] !== $clientId) {
+                flash('error', 'Not saved — ' . $existing['full_name'] . ' already uses that email.');
+                redirect('/clients/' . $clientId . '/edit');
+            }
+        }
+
+        $stmt = Db::pdo()->prepare(
+            'UPDATE clients SET full_name = :full_name, email = :email, phone = :phone,
+                address = :address, source = :source, tier = :tier, notes = :notes
+             WHERE id = :id'
+        );
+        try {
+            $stmt->execute([
+                'full_name' => $name,
+                'email' => $email,
+                'phone' => self::nullIfBlank($_POST['phone'] ?? ''),
+                'address' => self::nullIfBlank($_POST['address'] ?? ''),
+                'source' => self::nullIfBlank($_POST['source'] ?? ''),
+                'tier' => $tier,
+                'notes' => self::nullIfBlank($_POST['notes'] ?? ''),
+                'id' => $clientId,
+            ]);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000' && $email !== null) {
+                $existing = self::findByEmail($email);
+                if ($existing && (int) $existing['id'] !== $clientId) {
+                    flash('error', 'Not saved — ' . $existing['full_name'] . ' already uses that email.');
+                    redirect('/clients/' . $clientId . '/edit');
+                }
+            }
+            throw $e;
+        }
+
+        Activity::log('client.update', 'client', $clientId);
+        flash('success', 'Client updated.');
+        redirect('/clients/' . $clientId);
+    }
+
+    /** Permanently removes a client and everything tied to it (course records, contracts, session logs, assignments — all cascade). AA and Super Admin only. */
+    public static function destroy(array $routeParams): void
+    {
+        Auth::requireLogin();
+        $clientId = (int) $routeParams['id'];
+
+        if (!Access::canDeleteClient()) {
+            http_response_code(403);
+            render('errors/403');
+            return;
+        }
+
+        $client = self::find($clientId);
+        if (!$client) {
+            flash('error', 'Client not found.');
+            redirect('/clients');
+        }
+
+        $stmt = Db::pdo()->prepare('DELETE FROM clients WHERE id = :id');
+        $stmt->execute(['id' => $clientId]);
+
+        Activity::log('client.delete', 'client', $clientId, $client['full_name']);
+        flash('success', $client['full_name'] . ' and their records were removed.');
+        redirect('/clients');
     }
 
     public static function storeCourseRecord(array $routeParams): void
@@ -186,6 +334,14 @@ final class ClientController
     {
         $stmt = Db::pdo()->prepare('SELECT * FROM clients WHERE id = :id LIMIT 1');
         $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    private static function findByEmail(string $email): ?array
+    {
+        $stmt = Db::pdo()->prepare('SELECT id, full_name FROM clients WHERE email = :email LIMIT 1');
+        $stmt->execute(['email' => $email]);
         $row = $stmt->fetch();
         return $row ?: null;
     }

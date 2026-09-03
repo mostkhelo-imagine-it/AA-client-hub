@@ -9,6 +9,8 @@
 /** @var bool $canDeleteSessionLog */
 /** @var bool $canManageContracts */
 /** @var bool $canLogCourseRecord */
+/** @var bool $canEditClient */
+/** @var bool $canDeleteClient */
 $tierLabel = ['basic' => 'Basic', 'premium' => 'Premium', 'reality_creator' => 'Reality Creator'];
 $activeContract = null;
 foreach ($contracts as $c) {
@@ -17,7 +19,16 @@ foreach ($contracts as $c) {
 ?>
 <div style="display:flex; justify-content:space-between; align-items:baseline;">
   <h1><?= e($client['full_name']) ?> <span class="pill <?= e($client['tier']) ?>"><?= e($tierLabel[$client['tier']] ?? $client['tier']) ?></span></h1>
-  <a class="muted" href="<?= e(base_url('clients')) ?>">&larr; All clients</a>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <?php if ($canEditClient): ?><a class="muted" href="<?= e(base_url('clients/' . $client['id'] . '/edit')) ?>">Edit</a><?php endif; ?>
+    <?php if ($canDeleteClient): ?>
+      <form method="post" action="<?= e(base_url('clients/' . $client['id'] . '/delete')) ?>" onsubmit="return confirm('Permanently delete ' + <?= json_encode($client['full_name']) ?> + ' and all their course, contract, and session records? This can\'t be undone.');">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn danger" style="padding:0; border:none; background:none; text-transform:none; letter-spacing:normal; font-size:13px; text-decoration:underline; cursor:pointer;">Delete</button>
+      </form>
+    <?php endif; ?>
+    <a class="muted" href="<?= e(base_url('clients')) ?>">&larr; All clients</a>
+  </div>
 </div>
 
 <div class="card">

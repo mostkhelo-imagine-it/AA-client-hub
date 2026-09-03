@@ -2,6 +2,8 @@
 /** @var array $staff */
 /** @var array $clients */
 /** @var array $assignments */
+$roleLabel = ['aa' => 'AA', 'super_admin' => 'Super Admin', 'admin' => 'Admin', 'assistant' => 'Assistant'];
+$canManage = Access::canManageStaff(); // account creation + assignments — AA only
 ?>
 <h1>Staff & assignments</h1>
 
@@ -13,13 +15,19 @@
         <tr>
           <td><?= e($u['name']) ?></td>
           <td><?= e($u['email']) ?></td>
-          <td><?= e($u['role'] === 'aa' ? 'AA' : ucfirst($u['role'])) ?></td>
+          <td><?= e($roleLabel[$u['role']] ?? $u['role']) ?></td>
           <td><?= e(ucfirst($u['status'])) ?></td>
-          <td>
-            <?php if ($u['role'] !== 'aa'): ?>
+          <td style="white-space:nowrap;">
+            <?php if ($u['role'] !== 'aa' && $canManage): ?>
               <form class="inline" method="post" action="<?= e(base_url('staff/' . $u['id'] . '/toggle-status')) ?>">
                 <?= csrf_field() ?>
                 <button class="btn" type="submit"><?= $u['status'] === 'active' ? 'Disable' : 'Re-enable' ?></button>
+              </form>
+            <?php endif; ?>
+            <?php if (Access::canDeleteStaff($u['role'])): ?>
+              <form class="inline" method="post" action="<?= e(base_url('staff/' . $u['id'] . '/delete')) ?>" onsubmit="return confirm('Permanently remove ' + <?= json_encode($u['name']) ?> + '? This can\'t be undone.');">
+                <?= csrf_field() ?>
+                <button class="btn danger" type="submit">Remove</button>
               </form>
             <?php endif; ?>
           </td>
@@ -28,7 +36,9 @@
     </tbody>
   </table>
 </div>
+<p class="muted">Removal depends on your role: AA removes anyone; Super Admin removes Admin and Assistant accounts; Admin removes Assistant accounts only. An account with logged sessions, course records, or contracts on file can't be permanently removed — disable it instead to revoke access without losing that history.</p>
 
+<?php if ($canManage): ?>
 <div class="card" style="max-width:480px;">
   <h2 style="margin-top:0;">Add staff account</h2>
   <form method="post" action="<?= e(base_url('staff')) ?>">
@@ -39,6 +49,7 @@
     <input id="email" name="email" type="email" required>
     <label for="role">Role</label>
     <select id="role" name="role">
+      <option value="super_admin">Super Admin</option>
       <option value="admin">Admin</option>
       <option value="assistant">Assistant</option>
     </select>
@@ -48,7 +59,7 @@
 
 <div class="card">
   <h2 style="margin-top:0;">Client assignments</h2>
-  <p class="muted">Assistants only see clients assigned to them here. AA and admins see everyone by default.</p>
+  <p class="muted">Assistants only see clients assigned to them here. AA, Super Admin, and Admin see everyone by default.</p>
   <table>
     <thead><tr><th>Staff</th><th>Client</th><th></th></tr></thead>
     <tbody>
@@ -78,7 +89,7 @@
           <option value="">Choose…</option>
           <?php foreach ($staff as $u): ?>
             <?php if ($u['role'] !== 'aa'): ?>
-              <option value="<?= e((string) $u['id']) ?>"><?= e($u['name']) ?> (<?= e($u['role']) ?>)</option>
+              <option value="<?= e((string) $u['id']) ?>"><?= e($u['name']) ?> (<?= e($roleLabel[$u['role']] ?? $u['role']) ?>)</option>
             <?php endif; ?>
           <?php endforeach; ?>
         </select>
@@ -96,3 +107,4 @@
     <div class="actions"><button class="btn primary" type="submit">Assign</button></div>
   </form>
 </div>
+<?php endif; ?>

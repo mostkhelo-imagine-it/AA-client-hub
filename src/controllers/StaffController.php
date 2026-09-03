@@ -5,9 +5,16 @@ final class StaffController
 {
     public static function index(): void
     {
-        Auth::requireRole('aa');
+        Auth::requireLogin();
+        if (!Access::canViewStaffPage()) {
+            http_response_code(403);
+            render('errors/403');
+            return;
+        }
 
-        $staff = Db::pdo()->query('SELECT * FROM users ORDER BY role, name')->fetchAll();
+        $staff = Db::pdo()->query(
+            "SELECT * FROM users ORDER BY FIELD(role, 'aa', 'super_admin', 'admin', 'assistant'), name"
+        )->fetchAll();
         $clients = Db::pdo()->query('SELECT id, full_name, tier FROM clients ORDER BY full_name')->fetchAll();
         $assignments = Db::pdo()->query(
             'SELECT ca.*, u.name AS user_name, c.full_name AS client_name
@@ -32,7 +39,7 @@ final class StaffController
         $email = trim((string) ($_POST['email'] ?? ''));
         $role = (string) ($_POST['role'] ?? '');
 
-        if ($name === '' || $email === '' || !in_array($role, ['admin', 'assistant'], true)) {
+        if ($name === '' || $email === '' || !in_array($role, ['super_admin', 'admin', 'assistant'], true)) {
             flash('error', 'Name, email, and a valid role are required.');
             redirect('/staff');
         }
@@ -86,6 +93,54 @@ final class StaffController
         Activity::log('staff.status_change', 'user', $userId, $newStatus);
 
         flash('success', 'Account ' . $newStatus . '.');
+        redirect('/staff');
+    }
+
+    /**
+     * Permanently removes a staff account. Who's allowed depends on the
+     * target's role — see Access::canDeleteStaff(). Blocked (with a
+     * friendlier message than a raw DB error) if the account has activity
+     * on record — contracts, course records, or logged sessions all
+     * reference who created them, and MySQL's foreign keys refuse the
+     * delete rather than silently orphaning that history.
+     */
+    public static function destroy(array $routeParams): void
+    {
+        Auth::requireLogin();
+        $userId = (int) $routeParams['id'];
+
+        $stmt = Db::pdo()->prepare('SELECT id, name, role FROM users WHERE id = :id');
+        $stmt->execute(['id' => $userId]);
+        $target = $stmt->fetch();
+        if (!$target) {
+            flash('error', 'Account not found.');
+            redirect('/staff');
+        }
+
+        if ($userId === Auth::id()) {
+            flash('error', "You can't remove your own account.");
+            redirect('/staff');
+        }
+
+        if (!Access::canDeleteStaff($target['role'])) {
+            http_response_code(403);
+            render('errors/403');
+            return;
+        }
+
+        try {
+            $del = Db::pdo()->prepare('DELETE FROM users WHERE id = :id');
+            $del->execute(['id' => $userId]);
+        } catch (PDOException $e) {
+            if ((int) ($e->errorInfo[1] ?? 0) === 1451) {
+                flash('error', $target['name'] . " has activity on record (logged sessions, course records, or contracts) and can't be permanently deleted — disable their account instead to revoke access without losing that history.");
+                redirect('/staff');
+            }
+            throw $e;
+        }
+
+        Activity::log('staff.delete', 'user', $userId, $target['role']);
+        flash('success', $target['name'] . ' removed.');
         redirect('/staff');
     }
 

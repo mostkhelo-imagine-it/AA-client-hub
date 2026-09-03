@@ -6,14 +6,21 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ---------------------------------------------------------------
--- users — staff accounts (AA, Admin, Assistant)
+-- users — staff accounts (AA, Super Admin, Admin, Assistant)
+--
+-- Role hierarchy, top to bottom: aa > super_admin > admin > assistant.
+-- Removal rights: AA removes anyone; super_admin removes admin/assistant
+-- accounts; admin removes assistant accounts only. Client-record edit and
+-- delete are AA + super_admin only — admin can add client data (create
+-- clients, log courses/sessions) but not edit or delete existing records.
+-- See Access.php for exactly where each of these is enforced.
 -- ---------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
   id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name          VARCHAR(150) NOT NULL,
   email         VARCHAR(190) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role          ENUM('aa','admin','assistant') NOT NULL,
+  role          ENUM('aa','super_admin','admin','assistant') NOT NULL,
   status        ENUM('active','disabled') NOT NULL DEFAULT 'active',
   must_reset_password TINYINT(1) NOT NULL DEFAULT 1,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -35,7 +42,13 @@ CREATE TABLE IF NOT EXISTS clients (
   notes               TEXT NULL,
   created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  KEY idx_clients_tier (tier)
+  KEY idx_clients_tier (tier),
+  -- MySQL's UNIQUE index treats every NULL as distinct, so clients with
+  -- no email at all are unaffected — only an actual duplicate address
+  -- is rejected. The app checks this too (with a friendlier message),
+  -- but the index is what makes it true even for a path that skips the
+  -- app, or a race between two people saving at once.
+  UNIQUE KEY uq_clients_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------

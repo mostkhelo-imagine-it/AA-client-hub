@@ -5,6 +5,17 @@ Internal tool for AA and the team: client contacts, course history, and
 (roles, tiers, data model) worked out separately — this is the Phase 1–4
 implementation of that spec, plain PHP + MySQL, no framework, no build step.
 
+## Roles
+
+Four now, top to bottom: **AA** (owner, full control), **Super Admin**
+(edits and deletes client records, removes Admin/Assistant accounts),
+**Admin** (adds client data — new clients, course records, sessions,
+contracts — but can't edit or delete existing records, and can only
+remove Assistant accounts), **Assistant** (scoped to assigned clients
+only). The exact rule for every action lives in `src/Access.php`, in one
+place — that file is the source of truth if this summary and the code
+ever disagree.
+
 ## Stack
 
 - PHP 8.1+ (uses `never` return types and constructor property promotion
@@ -97,6 +108,44 @@ Either way, after the code is on the server:
 If any of this needs SSH, a cron job, or anything File Manager can't do,
 that's exactly what AA's dev team is there for — nothing here requires it,
 but nothing here avoids it either.
+
+## Schema changes after your first import
+
+`schema.sql` now has a UNIQUE index on `clients.email` (added after
+duplicate contacts turned out to be possible). `CREATE TABLE IF NOT
+EXISTS` won't retroactively add that to a database you already created —
+if `php -S` ever errors with `Duplicate entry ... for key
+'uq_clients_email'` when adding the constraint below, find and resolve
+the duplicate first:
+
+```sql
+SELECT id, full_name, email FROM clients WHERE email = 'the@duplicate.email' ORDER BY id;
+-- decide which row to keep, then:
+DELETE FROM clients WHERE id = <the one to remove>;
+-- note: this cascades to that client's course records, contracts, and
+-- session logs too (see schema.sql's foreign keys) — make sure you're
+-- deleting the right one.
+```
+
+Then apply the constraint:
+
+```sql
+ALTER TABLE clients ADD UNIQUE KEY uq_clients_email (email);
+```
+
+A brand-new database created from the current `schema.sql` already has
+this — this section only matters for a database set up before this
+change.
+
+`users.role` now also accepts `super_admin`, between `aa` and `admin`
+in the hierarchy (see **Roles** above). On a database you already
+created, widen the enum before creating a Super Admin account:
+
+```sql
+ALTER TABLE users MODIFY role ENUM('aa','super_admin','admin','assistant') NOT NULL;
+```
+
+A brand-new database from the current `schema.sql` already has this.
 
 ## Importing clients from any CSV or Excel file
 

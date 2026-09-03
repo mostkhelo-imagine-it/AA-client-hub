@@ -13,12 +13,27 @@ final class Access
     public static function canViewClient(int $clientId): bool
     {
         if (Auth::isFullAccess()) {
-            return true; // AA + Admin see every client
+            return true; // AA + Super Admin + Admin see every client
         }
         if (Auth::isAssistant()) {
             return self::isAssigned($clientId, Auth::id());
         }
         return false;
+    }
+
+    /**
+     * Editing or deleting an existing client record — AA and Super Admin only.
+     * Admin can still add client data (create clients, log courses/sessions,
+     * manage contracts/catalog below) but not change or remove what's there.
+     */
+    public static function canEditClient(): bool
+    {
+        return Auth::isAA() || Auth::isSuperAdmin();
+    }
+
+    public static function canDeleteClient(): bool
+    {
+        return Auth::isAA() || Auth::isSuperAdmin();
     }
 
     public static function isAssigned(int $clientId, int $userId): bool
@@ -82,9 +97,35 @@ final class Access
         return false;
     }
 
+    /** Creating accounts and managing client assignments stays AA-only. */
     public static function canManageStaff(): bool
     {
         return Auth::isAA();
+    }
+
+    /** AA, Super Admin, and Admin all need the staff page — to remove different tiers below them. */
+    public static function canViewStaffPage(): bool
+    {
+        return Auth::isFullAccess();
+    }
+
+    /**
+     * Who can remove a given staff account, based on the target's role:
+     * AA removes anyone but another AA; Super Admin removes Admin and
+     * Assistant accounts; Admin removes Assistant accounts only.
+     */
+    public static function canDeleteStaff(string $targetRole): bool
+    {
+        if (Auth::isAA()) {
+            return $targetRole !== 'aa';
+        }
+        if (Auth::isSuperAdmin()) {
+            return in_array($targetRole, ['admin', 'assistant'], true);
+        }
+        if (Auth::isAdmin()) {
+            return $targetRole === 'assistant';
+        }
+        return false;
     }
 
     /** Bulk CSV import touches every client — AA/Admin only, same as the course catalog. */
@@ -98,7 +139,7 @@ final class Access
         return Auth::isFullAccess();
     }
 
-    /** Admins only see their own actions in the activity log; AA sees everyone's. */
+    /** Admins only see their own actions in the activity log; AA and Super Admin see everyone's. */
     public static function activityLogUserFilter(): ?int
     {
         return Auth::isAdmin() ? Auth::id() : null;

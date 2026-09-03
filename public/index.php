@@ -45,6 +45,9 @@ $router->get('/clients/import', [ImportController::class, 'showForm']);
 $router->post('/clients/import/preview', [ImportController::class, 'preview']);
 $router->post('/clients/import/commit', [ImportController::class, 'commit']);
 $router->get('/clients/:id', [ClientController::class, 'show']);
+$router->get('/clients/:id/edit', [ClientController::class, 'edit']);
+$router->post('/clients/:id', [ClientController::class, 'update']);
+$router->post('/clients/:id/delete', [ClientController::class, 'destroy']);
 $router->post('/clients/:id/course-records', [ClientController::class, 'storeCourseRecord']);
 $router->post('/clients/:id/sessions', [SessionLogController::class, 'store']);
 $router->post('/clients/:id/sessions/:logId/delete', [SessionLogController::class, 'destroy']);
@@ -58,10 +61,11 @@ $router->post('/contracts/:id/decide', [ContractController::class, 'decide']);
 $router->get('/courses', [CourseController::class, 'index']);
 $router->post('/courses', [CourseController::class, 'store']);
 
-// -- Staff (AA only) -------------------------------------------------------
+// -- Staff — page visible to AA/Super Admin/Admin; most actions still AA-only -----
 $router->get('/staff', [StaffController::class, 'index']);
 $router->post('/staff', [StaffController::class, 'store']);
 $router->post('/staff/:id/toggle-status', [StaffController::class, 'toggleStatus']);
+$router->post('/staff/:id/delete', [StaffController::class, 'destroy']);
 $router->post('/staff/assignments', [StaffController::class, 'assign']);
 $router->post('/staff/assignments/:id/delete', [StaffController::class, 'unassign']);
 

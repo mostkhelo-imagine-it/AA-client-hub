@@ -19,7 +19,8 @@ implementation of that spec, plain PHP + MySQL, no framework, no build step.
 ```
 public/            ← document root — point the subdomain here
   index.php        ← front controller / router entry point
-  .htaccess        ← rewrites everything through index.php
+  .htaccess        ← rewrites everything through index.php (Apache/cPanel)
+  router.php       ← same job, for `php -S` local testing only
   assets/style.css
 src/
   config.php       ← loads .env
@@ -45,9 +46,12 @@ schema.sql         ← full database schema + a seeded AA account
    mysql -u root -p -e "CREATE DATABASE aa_clienthub CHARACTER SET utf8mb4"
    mysql -u root -p aa_clienthub < schema.sql
    ```
-4. Serve it with PHP's built-in server (no Apache needed locally):
+4. Serve it with PHP's built-in server (no Apache needed locally). It needs
+   the router script below because, unlike Apache/cPanel, the built-in
+   server doesn't read `.htaccess` — without it, everything except `/`
+   404s instead of reaching `index.php`:
    ```
-   php -S localhost:8000 -t public
+   php -S localhost:8000 -t public public/router.php
    ```
 5. Visit `http://localhost:8000`. Log in with `aa@example.com` / `changeme123`
    — **change that email in `schema.sql` before this ever touches a real

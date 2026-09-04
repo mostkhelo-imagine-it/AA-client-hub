@@ -1,4 +1,4 @@
--- Client Hub — database schema
+-- AA New Reality - Client DB — database schema
 -- Target: MySQL 5.7+ / MariaDB 10.3+ (cPanel default)
 -- Charset: utf8mb4 throughout for full Unicode (Arabic names, emoji-safe notes, etc.)
 

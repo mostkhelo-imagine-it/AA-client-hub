@@ -90,7 +90,7 @@
   <div class="card">
     <label style="display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:normal;">
       <input type="checkbox" name="skip_duplicates" value="1" checked style="width:auto;">
-      Skip rows whose email already exists in Client Hub
+      Skip rows whose email already exists in AA New Reality - Client DB
     </label>
   </div>
 

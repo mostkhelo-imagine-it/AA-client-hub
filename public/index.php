@@ -13,6 +13,7 @@ require dirname(__DIR__) . '/src/Xlsx.php';
 require dirname(__DIR__) . '/src/Tabular.php';
 require dirname(__DIR__) . '/src/ImportMapper.php';
 require dirname(__DIR__) . '/src/controllers/AuthController.php';
+require dirname(__DIR__) . '/src/controllers/DashboardController.php';
 require dirname(__DIR__) . '/src/controllers/ClientController.php';
 require dirname(__DIR__) . '/src/controllers/ImportController.php';
 require dirname(__DIR__) . '/src/controllers/CourseController.php';
@@ -36,8 +37,10 @@ $router->post('/logout', [AuthController::class, 'logout']);
 $router->get('/reset-password', [AuthController::class, 'showResetPassword']);
 $router->post('/reset-password', [AuthController::class, 'resetPassword']);
 
+// -- Home -------------------------------------------------------
+$router->get('/', [DashboardController::class, 'index']);
+
 // -- Clients -------------------------------------------------------
-$router->get('/', fn () => redirect('/clients'));
 $router->get('/clients', [ClientController::class, 'index']);
 $router->get('/clients/new', [ClientController::class, 'create']);
 $router->post('/clients', [ClientController::class, 'store']);

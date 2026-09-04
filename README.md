@@ -1,4 +1,4 @@
-# Client Hub
+# AA New Reality - Client DB
 
 Internal tool for AA and the team: client contacts, course history, and
 1-on-1 progress for the Reality Creator clients. Follows the design spec

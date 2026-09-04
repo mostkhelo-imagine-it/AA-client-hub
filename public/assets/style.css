@@ -76,3 +76,7 @@ textarea{min-height:80px;}
 .filters{display:flex; gap:10px; margin-bottom:16px;}
 .filters input, .filters select{width:auto;}
 .empty{color:var(--ink-soft); font-size:14px; padding:20px 0;}
+.stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:14px; margin-bottom:22px;}
+.stat{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px;}
+.stat .num{display:block; font-family:"Lora",Georgia,serif; font-size:1.9rem; line-height:1.15; color:var(--ink);}
+.stat .label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft);}

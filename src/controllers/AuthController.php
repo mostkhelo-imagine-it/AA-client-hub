@@ -6,7 +6,7 @@ final class AuthController
     public static function showLogin(): void
     {
         if (Auth::check() && Auth::user()) {
-            redirect('/clients');
+            redirect('/');
         }
         render_bare('auth/login', ['error' => flash('error')]);
     }
@@ -25,7 +25,7 @@ final class AuthController
         if ($user && (int) $user['must_reset_password'] === 1) {
             redirect('/reset-password');
         }
-        redirect('/clients');
+        redirect('/');
     }
 
     public static function logout(): void
@@ -58,6 +58,6 @@ final class AuthController
         Auth::setPassword(Auth::id(), $password);
         Activity::log('auth.password_reset', 'user', Auth::id());
         flash('success', 'Password updated.');
-        redirect('/clients');
+        redirect('/');
     }
 }

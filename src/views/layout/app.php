@@ -8,7 +8,7 @@ $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AA - Client Hub</title>
+<title>AA New Reality - Client DB</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@300;400;500&display=swap">
@@ -17,8 +17,9 @@ $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 <body>
 <?php if ($currentUser): ?>
 <div class="topbar">
-  <div class="brand">Client Hub</div>
+  <div class="brand">AA New Reality - Client DB</div>
   <nav>
+    <a href="<?= e(base_url('/')) ?>" class="<?= $path === '/' ? 'active' : '' ?>">Home</a>
     <a href="<?= e(base_url('clients')) ?>" class="<?= $path === '/clients' || (str_starts_with($path, '/clients/') && $path !== '/clients/import') ? 'active' : '' ?>">Clients</a>
     <?php if (Access::canImportClients()): ?>
       <a href="<?= e(base_url('clients/import')) ?>" class="<?= str_starts_with($path, '/clients/import') ? 'active' : '' ?>">Import</a>
